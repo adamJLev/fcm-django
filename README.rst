@@ -2,8 +2,11 @@ fcm-django
 =========================
 
 
-.. image:: https://badge.fury.io/py/fcm-django.svg
-    :target: https://badge.fury.io/py/fcm-django
+.. image:: https://badge.fury.io/py/fcm-django.svg 
+	:target: https://badge.fury.io/py/fcm-django 
+.. image:: https://en.cryptobadges.io/badge/small/3GHRdxw64kYKbG2RXZNtKveMPpSzMy7CLR 
+	:target: https://en.cryptobadges.io/donate/3GHRdxw64kYKbG2RXZNtKveMPpSzMy7CLR
+
 
 Django app for Firebase Cloud Messaging. Used as an unified platform for sending push notifications to mobile devices & browsers (android / ios / chrome / firefox / ...).
 
@@ -117,6 +120,16 @@ Sending messages in bulk
 	devices.send_message(title="Title", body="Message", data={"test": "test"})
 	devices.send_message(data={"test": "test"})
 
+Sending messages to topic
+-------------------------
+
+.. code-block:: python
+
+	from fcm_django.fcm import fcm_send_topic_message
+
+	fcm_send_topic_message(topic_name='My topic', message_body='Hello', message_title='A message')
+
+
 Using multiple FCM server keys
 ------------------------------
 
@@ -191,7 +204,7 @@ https://github.com/xtrinch/fcm-django-web-demo
 
 Python 3 support
 ----------------
-``fcm-django`` is fully compatible with Python 3.4 & 3.5
+``fcm-django`` is fully compatible with Python 3.4 & 3.5 & 3.6 & 3.7
 
 Acknowledgements
 ----------------

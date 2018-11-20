@@ -95,7 +95,8 @@ class FCMDeviceQuerySet(models.query.QuerySet):
             dry_run=False,
             data_message=None,
             content_available=None,
-            timeout=5):
+            timeout=5,
+            json_encoder=None):
         """
         Send data messages for all active devices in queryset and deactivate if
         DELETE_INACTIVE_DEVICES setting is set to True.
@@ -122,7 +123,8 @@ class FCMDeviceQuerySet(models.query.QuerySet):
                 dry_run=dry_run,
                 data_message=data_message,
                 content_available=content_available,
-                timeout=timeout
+                timeout=timeout,
+                json_encoder=json_encoder,
             )
 
             self._deactivate_devices_with_error_results(
@@ -135,18 +137,20 @@ class FCMDeviceQuerySet(models.query.QuerySet):
     def _deactivate_devices_with_error_results(self, registration_ids, results):
         for (index, item) in enumerate(results):
             if 'error' in item:
-                registration_id = registration_ids[index]
-                self.filter(registration_id=registration_id).update(
-                    active=False
-                )
-                self._delete_inactive_devices_if_requested(registration_id)
+                error_list = ['MissingRegistration', 'MismatchSenderId', 'InvalidRegistration', 'NotRegistered']
+                if item['error'] in error_list:
+                    registration_id = registration_ids[index]
+                    self.filter(registration_id=registration_id).update(
+                        active=False
+                    )
+                    self._delete_inactive_devices_if_requested(registration_id)
 
     def _delete_inactive_devices_if_requested(self, registration_id):
         if SETTINGS["DELETE_INACTIVE_DEVICES"]:
             self.filter(registration_id=registration_id).delete()
 
 
-class FCMDevice(Device):
+class AbstractFCMDevice(Device):
     DEVICE_TYPES = (
         (u'ios', u'ios'),
         (u'android', u'android'),
@@ -163,6 +167,7 @@ class FCMDevice(Device):
     objects = FCMDeviceManager()
 
     class Meta:
+        abstract = True
         verbose_name = _("FCM device")
 
     def send_message(
@@ -206,7 +211,8 @@ class FCMDevice(Device):
             data_message=None,
             content_available=None,
             api_key=None,
-            timeout=5):
+            timeout=5,
+            json_encoder=None):
         """
         Send single data message.
         """
@@ -223,7 +229,8 @@ class FCMDevice(Device):
             data_message=data_message,
             content_available=content_available,
             api_key=api_key,
-            timeout=timeout
+            timeout=timeout,
+            json_encoder=json_encoder,
         )
 
         self._deactivate_device_on_error_result(result)
@@ -232,10 +239,16 @@ class FCMDevice(Device):
     def _deactivate_device_on_error_result(self, result):
         device = FCMDevice.objects.filter(registration_id=self.registration_id)
         if 'error' in result['results'][0]:
-            device.update(active=False)
-            self._delete_inactive_device_if_requested(device)
+            error_list = ['MissingRegistration', 'MismatchSenderId', 'InvalidRegistration', 'NotRegistered']
+            if result['results'][0]['error'] in error_list:
+              device.update(active=False)
+              self._delete_inactive_device_if_requested(device)
 
     @staticmethod
     def _delete_inactive_device_if_requested(device):
         if SETTINGS["DELETE_INACTIVE_DEVICES"]:
             device.delete()
+
+
+class FCMDevice(AbstractFCMDevice):
+    pass
